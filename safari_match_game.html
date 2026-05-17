@@ -10,7 +10,6 @@
     --secondary: #558B2F;
     --accent: #E58E26;
     --success: #78E08F;
-    --error: #ED5E68;
     --bg: #7CB342;
     --panel-bg: #FFFFFF;
     --radius: 16px;
@@ -67,6 +66,7 @@ button.selected { background: var(--accent); color: white; border-color: #C37920
 .picture-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; padding: 8px; }
 .icon-item { font-size: clamp(1rem, 3vw, 1.5rem); }
 
+/* Default drop zone (tablet/desktop) */
 .drop-zone {
     width: 100%; max-width: 180px;
     height: clamp(70px, 12vw, 100px);
@@ -78,17 +78,16 @@ button.selected { background: var(--accent); color: white; border-color: #C37920
 .drop-zone.hover { background: #F1F8E9; border-color: var(--primary); }
 .drop-zone.filled { border-style: solid; border-color: var(--success); background: #F0FFF4; box-shadow: none; }
 
-/* Fixed height bin — this is the key fix. Height matches draggable item height so it never collapses. */
+/* Default draggables bin (tablet/desktop) */
 .draggables-container {
     display: flex; justify-content: center; align-items: center;
     gap: clamp(16px, 5vw, 40px);
     flex-shrink: 0;
     margin-top: clamp(6px, 1.5vh, 14px);
-    /* Reserve the exact height of the draggable items so nothing shifts when they leave */
     height: clamp(65px, 11vw, 100px);
-    padding: 0;
 }
 
+/* Default draggable item (tablet/desktop) */
 .draggable-item {
     width: clamp(120px, 22vw, 180px);
     height: clamp(65px, 11vw, 100px);
@@ -112,15 +111,35 @@ button.selected { background: var(--accent); color: white; border-color: #C37920
     #game-container { height: auto; max-height: 92vh; }
     .number-card { max-height: 210px; }
 }
-@media (max-width: 420px) {
+
+/* ── Mobile overrides ── */
+@media (max-width: 480px) {
     body { padding: 6px; align-items: flex-start; overflow-y: auto; }
     #game-container { max-height: none; border-width: 4px; padding: 12px; }
-    .settings-container { grid-template-columns: 1fr 1fr; gap: 8px; }
-    .number-card { aspect-ratio: 1/1; max-height: 150px; }
-    .drop-zone { height: 60px; }
-    .draggable-item { width: 110px; height: 58px; }
-    .draggables-container { height: 58px; gap: 16px; }
+    .settings-container { gap: 8px; }
     .match-area { gap: 12px; }
+    .number-card { aspect-ratio: 1/1; max-height: 150px; }
+
+    /* Drop zone and draggable: same square size, large enough to see the image */
+    .drop-zone {
+        max-width: none;
+        width: 120px;
+        height: 120px;
+        border-radius: 14px;
+    }
+    .draggables-container {
+        height: 120px;
+        gap: 20px;
+        margin-top: 10px;
+    }
+    .draggable-item {
+        width: 120px;
+        height: 120px;
+        border-radius: 14px;
+        font-size: 1.2rem;
+        box-shadow: 0 5px 0 #C37920;
+    }
+    .draggable-item img { height: 90%; width: 90%; }
 }
 </style>
 </head>
@@ -205,7 +224,6 @@ function initAudio() {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     if (audioCtx.state === 'suspended') audioCtx.resume();
 }
-
 function playCorrectSound() {
     if (!audioCtx) return;
     const now = audioCtx.currentTime;
@@ -222,28 +240,23 @@ function playCorrectSound() {
         osc.stop(now + 0.6);
     });
 }
-
 function setSetting(key, value) {
     settings[key] = value;
     const groupIds = { range: 'range-group', rep: 'rep-group', mode: 'mode-group', trials: 'trials-group' };
     document.querySelectorAll(`#${groupIds[key]} button`).forEach(btn => {
         btn.classList.remove('selected');
-        const t = btn.innerText.toLowerCase();
-        const v = value.toString().toLowerCase();
+        const t = btn.innerText.toLowerCase(), v = value.toString().toLowerCase();
         if (t === v || (v === 'pics' && t === 'icons') || (v === 'nums' && t === 'numbers') ||
-            (isNaN(value) && t.includes(v)) || (!isNaN(value) && t.includes(value))) {
+            (isNaN(value) && t.includes(v)) || (!isNaN(value) && t.includes(value)))
             btn.classList.add('selected');
-        }
     });
 }
-
 function startGame() {
     initAudio();
     gameState.currentTrial = 0;
     showScreen('game-screen');
     nextTrial();
 }
-
 function nextTrial() {
     if (gameState.currentTrial >= settings.trials) return showScreen('success-screen');
     gameState.matches = 0;
@@ -255,7 +268,6 @@ function nextTrial() {
     resetDraggables();
     updateProgressBar();
 }
-
 function renderCard(id, val, icon) {
     const el = document.getElementById(id);
     el.innerHTML = '';
@@ -266,56 +278,41 @@ function renderCard(id, val, icon) {
         el.innerHTML += grid + '</div>';
     }
 }
-
 function resetDraggables() {
     const more = document.getElementById('drag-more');
     const less = document.getElementById('drag-less');
     if (settings.rep === 'words') {
-        more.innerHTML = 'MORE';
-        less.innerHTML = 'LESS';
+        more.innerHTML = 'MORE'; less.innerHTML = 'LESS';
     } else {
         more.innerHTML = `<img src="https://iili.io/BWVP5o7.md.png" alt="more">`;
         less.innerHTML = `<img src="https://iili.io/BWVPuN2.md.png" alt="less">`;
     }
     [more, less].forEach(el => {
-        el.style.position = '';
-        el.style.left = '';
-        el.style.top = '';
-        el.style.width = '';
-        el.style.height = '';
-        el.style.zIndex = '';
-        el.style.pointerEvents = '';
-        el.style.visibility = 'visible';
+        el.style.position = ''; el.style.left = ''; el.style.top = '';
+        el.style.width = ''; el.style.height = ''; el.style.zIndex = '';
+        el.style.pointerEvents = ''; el.style.visibility = 'visible';
         document.getElementById('draggables-bin').appendChild(el);
     });
     document.querySelectorAll('.drop-zone').forEach(z => { z.innerHTML = ''; z.classList.remove('filled', 'hover'); });
 }
-
 function getClientXY(e) {
     if (e.touches && e.touches.length > 0) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
     if (e.changedTouches && e.changedTouches.length > 0) return { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
     return { x: e.clientX, y: e.clientY };
 }
-
 document.querySelectorAll('.draggable-item').forEach(item => {
     item.addEventListener('mousedown', dragStart);
     item.addEventListener('touchstart', dragStart, { passive: false });
 });
-
 function dragStart(e) {
     e.preventDefault();
     const item = e.currentTarget;
     if (item.closest('.drop-zone.filled')) return;
-
     activeDragItem = item;
     const { x, y } = getClientXY(e);
-    startClientX = x;
-    startClientY = y;
-
+    startClientX = x; startClientY = y;
     const rect = item.getBoundingClientRect();
-    initialX = rect.left;
-    initialY = rect.top;
-
+    initialX = rect.left; initialY = rect.top;
     item.style.position = 'fixed';
     item.style.width = rect.width + 'px';
     item.style.height = rect.height + 'px';
@@ -324,59 +321,45 @@ function dragStart(e) {
     item.style.zIndex = '1000';
     item.style.transition = 'none';
     item.style.pointerEvents = 'none';
-
     window.addEventListener('mousemove', dragMove);
     window.addEventListener('touchmove', dragMove, { passive: false });
     window.addEventListener('mouseup', dragEnd);
     window.addEventListener('touchend', dragEnd);
 }
-
 function dragMove(e) {
     if (!activeDragItem) return;
     e.preventDefault();
     const { x, y } = getClientXY(e);
     activeDragItem.style.left = (initialX + x - startClientX) + 'px';
     activeDragItem.style.top  = (initialY + y - startClientY) + 'px';
-
     const rect = activeDragItem.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
+    const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
     document.querySelectorAll('.drop-zone').forEach(z => {
         const zr = z.getBoundingClientRect();
-        if (!z.classList.contains('filled') && cx > zr.left && cx < zr.right && cy > zr.top && cy < zr.bottom) {
+        if (!z.classList.contains('filled') && cx > zr.left && cx < zr.right && cy > zr.top && cy < zr.bottom)
             z.classList.add('hover');
-        } else {
-            z.classList.remove('hover');
-        }
+        else z.classList.remove('hover');
     });
 }
-
 function dragEnd(e) {
     if (!activeDragItem) return;
-
     const rect = activeDragItem.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-
+    const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
     let dropped = false;
     document.querySelectorAll('.drop-zone').forEach(zone => {
         const zr = zone.getBoundingClientRect();
         if (!dropped && cx > zr.left && cx < zr.right && cy > zr.top && cy < zr.bottom) {
-            checkMatch(activeDragItem, zone);
-            dropped = true;
+            checkMatch(activeDragItem, zone); dropped = true;
         }
         zone.classList.remove('hover');
     });
-
     if (!dropped) snapBack(activeDragItem);
-
     window.removeEventListener('mousemove', dragMove);
     window.removeEventListener('touchmove', dragMove);
     window.removeEventListener('mouseup', dragEnd);
     window.removeEventListener('touchend', dragEnd);
     activeDragItem = null;
 }
-
 function checkMatch(item, zone) {
     if (zone.classList.contains('filled')) { snapBack(item); return; }
     const type = item.getAttribute('data-type');
@@ -384,14 +367,9 @@ function checkMatch(item, zone) {
     const val = side === 'left' ? gameState.leftVal : gameState.rightVal;
     const other = side === 'left' ? gameState.rightVal : gameState.leftVal;
     const isCorrect = (type === 'more' && val > other) || (type === 'less' && val < other);
-
     if (isCorrect) {
-        item.style.position = '';
-        item.style.left = '';
-        item.style.top = '';
-        item.style.width = '';
-        item.style.height = '';
-        item.style.zIndex = '';
+        item.style.position = ''; item.style.left = ''; item.style.top = '';
+        item.style.width = ''; item.style.height = ''; item.style.zIndex = '';
         item.style.pointerEvents = '';
         zone.appendChild(item);
         zone.classList.add('filled');
@@ -401,28 +379,18 @@ function checkMatch(item, zone) {
             playCorrectSound();
             setTimeout(() => { gameState.currentTrial++; nextTrial(); }, 800);
         }
-    } else {
-        snapBack(item);
-    }
+    } else { snapBack(item); }
 }
-
 function snapBack(item) {
     item.style.transition = 'left 0.3s ease, top 0.3s ease';
-    item.style.left = initialX + 'px';
-    item.style.top  = initialY + 'px';
+    item.style.left = initialX + 'px'; item.style.top = initialY + 'px';
     setTimeout(() => {
-        item.style.position = '';
-        item.style.left = '';
-        item.style.top = '';
-        item.style.width = '';
-        item.style.height = '';
-        item.style.zIndex = '';
-        item.style.pointerEvents = '';
-        item.style.transition = '';
+        item.style.position = ''; item.style.left = ''; item.style.top = '';
+        item.style.width = ''; item.style.height = ''; item.style.zIndex = '';
+        item.style.pointerEvents = ''; item.style.transition = '';
         document.getElementById('draggables-bin').appendChild(item);
     }, 300);
 }
-
 function updateProgressBar() {
     document.getElementById('progress-fill').style.width = `${(gameState.currentTrial / settings.trials) * 100}%`;
 }
