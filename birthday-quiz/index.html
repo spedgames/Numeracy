@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Birthday Quest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sky:#55c1f0;
+    --sky-deep:#2f9fdc;
+    --sun:#ffc93c;
+    --sun-deep:#f2a900;
+    --coral:#ff6b6b;
+    --grass:#3fb87f;
+    --cream:#fffdf6;
+    --plum:#332a52;
+    --plum-soft:#6d6291;
+    --card-radius:28px;
+    --shadow: 0 18px 40px -14px rgba(51,42,82,0.35);
+  }
+
+  *{box-sizing:border-box;}
+
+  html,body{
+    margin:0;
+    padding:0;
+    height:100%;
+    font-family:'Nunito', sans-serif;
+    color:var(--plum);
+  }
+
+  body{
+    min-height:100vh;
+    background:
+      radial-gradient(circle at 15% 15%, rgba(255,255,255,0.35), transparent 40%),
+      radial-gradient(circle at 85% 80%, rgba(255,255,255,0.25), transparent 45%),
+      linear-gradient(180deg, var(--sky) 0%, var(--sky-deep) 100%);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+    overflow-x:hidden;
+    position:relative;
+  }
+
+  h1,h2,h3{
+    font-family:'Fredoka', sans-serif;
+    margin:0;
+    font-weight:600;
+  }
+
+  button{
+    font-family:'Nunito', sans-serif;
+    cursor:pointer;
+    border:none;
+  }
+
+  button:focus-visible, input:focus-visible, [tabindex]:focus-visible{
+    outline:3px solid var(--plum);
+    outline-offset:3px;
+  }
+
+  /* ---------- decorative balloons ---------- */
+  .balloon{
+    position:fixed;
+    width:60px;
+    height:74px;
+    border-radius:50% 50% 50% 50% / 58% 58% 42% 42%;
+    opacity:0.5;
+    filter:blur(0.3px);
+    pointer-events:none;
+  }
+  .balloon::after{
+    content:'';
+    position:absolute;
+    bottom:-34px;
+    left:50%;
+    width:1px;
+    height:34px;
+    background:rgba(255,255,255,0.6);
+  }
+  .b1{ top:6%; left:6%; background:var(--sun); animation: float 7s ease-in-out infinite; }
+  .b2{ top:70%; left:4%; background:var(--coral); width:44px; height:56px; animation: float 8.5s ease-in-out infinite 0.4s; }
+  .b3{ top:12%; right:7%; background:var(--grass); width:50px; height:62px; animation: float 6.5s ease-in-out infinite 0.8s; }
+  .b4{ top:75%; right:9%; background:var(--cream); opacity:0.65; width:38px; height:48px; animation: float 9s ease-in-out infinite 0.2s; }
+
+  @keyframes float{
+    0%,100%{ transform: translateY(0) rotate(-2deg); }
+    50%{ transform: translateY(-16px) rotate(2deg); }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .balloon{ animation:none !important; }
+  }
+
+  /* ---------- app shell ---------- */
+  .app{
+    width:100%;
+    max-width:480px;
+    position:relative;
+    z-index:1;
+  }
+
+  .card{
+    background:var(--cream);
+    border-radius:var(--card-radius);
+    box-shadow:var(--shadow);
+    padding:32px 28px;
+    position:relative;
+    animation: rise 0.45s cubic-bezier(.2,.8,.25,1);
+  }
+
+  @keyframes rise{
+    from{ opacity:0; transform: translateY(14px) scale(0.98); }
+    to{ opacity:1; transform: translateY(0) scale(1); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .card{ animation:none; }
+  }
+
+  .screen{ display:none; }
+  .screen.active{ display:block; }
+
+  .eyebrow{
+    font-family:'Fredoka', sans-serif;
+    font-size:13px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--sky-deep);
+    font-weight:600;
+    margin-bottom:6px;
+  }
+
+  .title{
+    font-size:clamp(22px, 5.2vw, 28px);
+    line-height:1.25;
+    margin-bottom:6px;
+  }
+
+  .subtitle{
+    color:var(--plum-soft);
+    font-size:15px;
+    font-weight:600;
+    margin-bottom:22px;
+  }
+
+  /* ---------- primary buttons ---------- */
+  .btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    font-family:'Fredoka', sans-serif;
+    font-weight:600;
+    font-size:16px;
+    padding:14px 22px;
+    border-radius:16px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  }
+  .btn:active{ transform: scale(0.97); }
+
+  .btn-primary{
+    background:var(--sky-deep);
+    color:#fff;
+    box-shadow:0 10px 22px -8px rgba(47,159,220,0.65);
+    width:100%;
+  }
+  .btn-primary:hover{ background:#2589c2; }
+
+  .btn-ghost{
+    background:transparent;
+    color:var(--plum-soft);
+    padding:10px 14px;
+    font-size:14px;
+  }
+  .btn-ghost:hover{ color:var(--plum); }
+
+  /* ---------- profile screen ---------- */
+  .profile-list{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    margin-bottom:20px;
+  }
+
+  .profile-card{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    background:#fff;
+    border:2px solid #eef0fb;
+    border-radius:18px;
+    padding:10px 12px;
+    transition: border-color 0.15s ease;
+  }
+  .profile-card:hover{ border-color:var(--sky); }
+
+  .avatar{
+    width:44px;
+    height:44px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:'Fredoka', sans-serif;
+    font-weight:600;
+    font-size:17px;
+    color:#fff;
+    flex-shrink:0;
+  }
+
+  .profile-info{ flex:1; min-width:0; }
+  .profile-name{ font-family:'Fredoka', sans-serif; font-weight:600; font-size:15px; }
+  .profile-date{ color:var(--plum-soft); font-size:13px; font-weight:600; }
+
+  .icon-btn{
+    background:transparent;
+    width:34px;
+    height:34px;
+    border-radius:10px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:var(--plum-soft);
+    flex-shrink:0;
+  }
+  .icon-btn:hover{ background:#f4f1ff; color:var(--coral); }
+
+  .empty-state{
+    text-align:center;
+    padding:18px 10px 22px;
+    color:var(--plum-soft);
+    font-weight:600;
+    font-size:14px;
+  }
+
+  .field{
+    margin-bottom:14px;
+  }
+  .field label{
+    display:block;
+    font-size:13px;
+    font-weight:700;
+    color:var(--plum);
+    margin-bottom:6px;
+  }
+  .field input{
+    width:100%;
+    font-family:'Nunito', sans-serif;
+    font-size:15px;
+    font-weight:600;
+    padding:12px 14px;
+    border-radius:14px;
+    border:2px solid #e6e2f5;
+    background:#fbfaff;
+    color:var(--plum);
+  }
+  .field input:focus{ border-color:var(--sky-deep); outline:none; }
+
+  .add-form{
+    border-top:2px dashed #eee7ff;
+    padding-top:18px;
+    margin-top:4px;
+  }
+  .add-form-title{
+    font-family:'Fredoka', sans-serif;
+    font-weight:600;
+    font-size:15px;
+    margin-bottom:12px;
+  }
+
+  .form-error{
+    color:var(--coral);
+    font-size:13px;
+    font-weight:700;
+    margin:-6px 0 12px;
+    display:none;
+  }
+
+  /* ---------- intro screen ---------- */
+  .intro-art{
+    display:flex;
+    justify-content:center;
+    margin-bottom:8px;
+  }
+  .intro-art svg{ width:150px; height:150px; }
+
+  .intro-text{
+    text-align:center;
+    font-size:19px;
+    line-height:1.45;
+    font-weight:800;
+    color:var(--plum);
+    margin:6px 0 4px;
+  }
+  .intro-sub{
+    text-align:center;
+    color:var(--plum-soft);
+    font-weight:600;
+    font-size:14.5px;
+    margin-bottom:24px;
+  }
+
+  /* ---------- candle progress ---------- */
+  .candles{
+    display:flex;
+    justify-content:center;
+    gap:14px;
+    margin-bottom:22px;
+  }
+  .candle svg{ width:26px; height:44px; display:block; }
+  .flame{ opacity:0; transform-origin:50% 100%; transform:scale(0.4); transition: opacity 0.35s ease, transform 0.35s ease; }
+  .candle.lit .flame{ opacity:1; transform:scale(1); animation: flicker 1.6s ease-in-out infinite; }
+  @keyframes flicker{
+    0%,100%{ transform:scale(1) rotate(0deg); }
+    50%{ transform:scale(1.08) rotate(-3deg); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .candle.lit .flame{ animation:none; }
+  }
+
+  .quiz-meta{
+    text-align:center;
+    color:var(--plum-soft);
+    font-weight:700;
+    font-size:13px;
+    letter-spacing:0.03em;
+    text-transform:uppercase;
+    margin-bottom:6px;
+  }
+
+  .quiz-question{
+    text-align:center;
+    font-size:20px;
+    margin-bottom:22px;
+  }
+
+  .options{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+    margin-bottom:6px;
+  }
+
+  .option{
+    background:#fff;
+    border:2px solid #e9e5fa;
+    border-radius:16px;
+    padding:16px 10px;
+    font-family:'Fredoka', sans-serif;
+    font-weight:600;
+    font-size:15.5px;
+    color:var(--plum);
+    transition: border-color 0.15s ease, transform 0.15s ease, background 0.15s ease;
+  }
+  .option:hover{ border-color:var(--sky-deep); }
+  .option.correct{
+    background:var(--grass);
+    border-color:var(--grass);
+    color:#fff;
+    animation: pop 0.35s ease;
+  }
+  .option.wrong{
+    background:var(--coral);
+    border-color:var(--coral);
+    color:#fff;
+    animation: shake 0.4s ease;
+  }
+  .option[disabled]{ pointer-events:none; }
+  @keyframes pop{ 0%{transform:scale(1);} 50%{transform:scale(1.06);} 100%{transform:scale(1);} }
+  @keyframes shake{
+    0%,100%{ transform:translateX(0); }
+    20%{ transform:translateX(-6px); }
+    40%{ transform:translateX(6px); }
+    60%{ transform:translateX(-4px); }
+    80%{ transform:translateX(4px); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .option.correct, .option.wrong{ animation:none; }
+  }
+
+  .feedback{
+    min-height:22px;
+    text-align:center;
+    font-weight:700;
+    font-size:14px;
+    color:var(--coral);
+    margin-top:8px;
+  }
+
+  /* ---------- calendar screen ---------- */
+  .cal-header{
+    text-align:center;
+    margin-bottom:16px;
+  }
+  .cal-month{
+    font-family:'Fredoka', sans-serif;
+    font-weight:600;
+    font-size:19px;
+    color:var(--plum);
+  }
+
+  .cal-grid{
+    display:grid;
+    grid-template-columns:repeat(7, 1fr);
+    gap:6px;
+  }
+  .cal-dow{
+    text-align:center;
+    font-size:11.5px;
+    font-weight:800;
+    color:var(--plum-soft);
+    padding-bottom:4px;
+  }
+  .cal-day{
+    aspect-ratio:1/1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#fff;
+    border:2px solid #eee9fb;
+    border-radius:12px;
+    font-family:'Fredoka', sans-serif;
+    font-weight:600;
+    font-size:14.5px;
+    color:var(--plum);
+    transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+  }
+  .cal-day:hover{ border-color:var(--sky-deep); }
+  .cal-day.empty{ visibility:hidden; }
+  .cal-day.correct{ background:var(--grass); border-color:var(--grass); color:#fff; }
+  .cal-day.wrong{ background:var(--coral); border-color:var(--coral); color:#fff; animation: shake 0.4s ease; }
+
+  /* ---------- success screen ---------- */
+  .success-emoji{
+    text-align:center;
+    font-size:56px;
+    margin-bottom:6px;
+  }
+  .success-title{
+    text-align:center;
+    font-size:22px;
+    margin-bottom:6px;
+  }
+  .success-sub{
+    text-align:center;
+    color:var(--plum-soft);
+    font-weight:600;
+    font-size:14.5px;
+    margin-bottom:24px;
+  }
+  .success-actions{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+
+  .top-nav{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:14px;
+  }
+
+  .loading{
+    text-align:center;
+    color:var(--plum-soft);
+    font-weight:700;
+    padding:30px 0;
+  }
+
+  .confetti-piece{
+    position:fixed;
+    top:-20px;
+    width:9px;
+    height:14px;
+    border-radius:2px;
+    z-index:50;
+    pointer-events:none;
+    animation: fall linear forwards;
+  }
+  @keyframes fall{
+    to{ transform: translateY(110vh) rotate(540deg); opacity:0.9; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="balloon b1" aria-hidden="true"></div>
+  <div class="balloon b2" aria-hidden="true"></div>
+  <div class="balloon b3" aria-hidden="true"></div>
+  <div class="balloon b4" aria-hidden="true"></div>
+
+  <div class="app">
+
+    <!-- ============ PROFILE SCREEN ============ -->
+    <section id="screen-profiles" class="screen active card" aria-labelledby="profiles-title">
+      <div class="eyebrow">Birthday Quest</div>
+      <h1 id="profiles-title" class="title">Whose birthday are we learning?</h1>
+      <p class="subtitle">Pick a player or add a new one.</p>
+
+      <div id="profileLoading" class="loading">Loading players…</div>
+      <div id="profileList" class="profile-list" style="display:none;"></div>
+      <div id="profileEmpty" class="empty-state" style="display:none;">No players yet — add the first one below! 🎈</div>
+
+      <div class="add-form">
+        <div class="add-form-title">Add a new player</div>
+        <div class="field">
+          <label for="nameInput">Name</label>
+          <input id="nameInput" type="text" placeholder="e.g. Mia" maxlength="24" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="dateInput">Birthday</label>
+          <input id="dateInput" type="date">
+        </div>
+        <div id="formError" class="form-error">Please add a name and a birthday.</div>
+        <button id="addProfileBtn" class="btn btn-primary">Add player</button>
+      </div>
+    </section>
+
+    <!-- ============ INTRO SCREEN ============ -->
+    <section id="screen-intro" class="screen card" aria-labelledby="intro-title">
+      <div class="top-nav">
+        <button class="btn btn-ghost" id="backFromIntro">← Players</button>
+      </div>
+      <div class="intro-art" aria-hidden="true">
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="100" cy="100" r="96" fill="#fff3d6"/>
+          <ellipse cx="100" cy="150" rx="52" ry="34" fill="#ffc93c"/>
+          <ellipse cx="100" cy="148" rx="40" ry="26" fill="#fff3d6"/>
+          <circle cx="100" cy="98" r="52" fill="#ffe0c2"/>
+          <path d="M55 88 Q100 55 145 88 Q140 62 100 58 Q60 62 55 88Z" fill="#5a3d2b"/>
+          <circle cx="80" cy="102" r="6" fill="#332a52"/>
+          <circle cx="120" cy="102" r="6" fill="#332a52"/>
+          <circle cx="68" cy="118" r="8" fill="#ff9d9d" opacity="0.7"/>
+          <circle cx="132" cy="118" r="8" fill="#ff9d9d" opacity="0.7"/>
+          <path d="M85 122 Q100 132 115 122" stroke="#332a52" stroke-width="4" fill="none" stroke-linecap="round"/>
+          <path d="M78 82 Q80 74 88 74" stroke="#5a3d2b" stroke-width="4" fill="none" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <p id="introText" class="intro-text">Your birthday is the day when you were born.</p>
+      <p id="introSub" class="intro-sub">Let's practice remembering it!</p>
+      <button id="startQuizBtn" class="btn btn-primary">Start the quiz</button>
+    </section>
+
+    <!-- ============ QUIZ SCREEN ============ -->
+    <section id="screen-quiz" class="screen card" aria-labelledby="quiz-title">
+      <div class="candles" id="candleRow" aria-hidden="true"></div>
+      <div class="quiz-meta" id="quizMeta">Question 1 of 5</div>
+      <h2 id="quiz-title" class="quiz-question">When is <span id="quizName">your</span> birthday?</h2>
+      <div class="options" id="optionsGrid" role="group" aria-label="Choose the correct birthday"></div>
+      <div class="feedback" id="quizFeedback" aria-live="polite"></div>
+    </section>
+
+    <!-- ============ CALENDAR SCREEN ============ -->
+    <section id="screen-calendar" class="screen card" aria-labelledby="cal-title">
+      <div class="cal-header">
+        <div class="eyebrow">Last step</div>
+        <h2 id="cal-title" class="cal-month">March 2018</h2>
+        <p class="subtitle" style="margin-bottom:16px;">Tap the day you were born.</p>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+      <div class="feedback" id="calFeedback" aria-live="polite"></div>
+    </section>
+
+    <!-- ============ SUCCESS SCREEN ============ -->
+    <section id="screen-success" class="screen card" aria-labelledby="success-title">
+      <div class="success-emoji" aria-hidden="true">🎂</div>
+      <h2 id="success-title" class="success-title">You know your birthday!</h2>
+      <p id="successSub" class="success-sub">Great memory — keep it up!</p>
+      <div class="success-actions">
+        <button id="playAgainBtn" class="btn btn-primary">Play again</button>
+        <button id="switchProfileBtn" class="btn btn-ghost">Choose another player</button>
+      </div>
+    </section>
+
+  </div>
+
+<script>
+(function(){
+  "use strict";
+
+  const STORAGE_KEY = "profiles";
+  const AVATAR_COLORS = ["#ff6b6b","#3fb87f","#2f9fdc","#f2a900","#9b6bff","#ff8fb1"];
+  const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const DOW = ["S","M","T","W","T","F","S"];
+  const TOTAL_TRIALS = 5;
+
+  let profiles = [];
+  let currentProfile = null;
+  let quiz = { trial: 0, correct: 0 };
+
+  // ---------- storage helpers ----------
+  async function loadProfiles(){
+    try{
+      const res = await window.storage.get(STORAGE_KEY, false);
+      profiles = res && res.value ? JSON.parse(res.value) : [];
+    }catch(e){
+      profiles = [];
+    }
+  }
+
+  async function saveProfiles(){
+    try{
+      await window.storage.set(STORAGE_KEY, JSON.stringify(profiles), false);
+    }catch(e){
+      console.error("Could not save players", e);
+    }
+  }
+
+  // ---------- screen navigation ----------
+  function showScreen(id){
+    document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+    document.getElementById(id).classList.add("active");
+  }
+
+  // ---------- profile screen ----------
+  function initials(name){
+    return name.trim().split(/\s+/).slice(0,2).map(w => w[0].toUpperCase()).join("");
+  }
+
+  function colorFor(id){
+    let sum = 0;
+    for(const ch of id) sum += ch.charCodeAt(0);
+    return AVATAR_COLORS[sum % AVATAR_COLORS.length];
+  }
+
+  function formatMonthDay(month, day){
+    return MONTH_NAMES[month-1] + " " + day;
+  }
+
+  function renderProfiles(){
+    const list = document.getElementById("profileList");
+    const empty = document.getElementById("profileEmpty");
+    document.getElementById("profileLoading").style.display = "none";
+
+    if(profiles.length === 0){
+      list.style.display = "none";
+      empty.style.display = "block";
+      return;
+    }
+    empty.style.display = "none";
+    list.style.display = "flex";
+    list.innerHTML = "";
+
+    profiles.forEach(p => {
+      const card = document.createElement("div");
+      card.className = "profile-card";
+
+      const avatar = document.createElement("div");
+      avatar.className = "avatar";
+      avatar.style.background = colorFor(p.id);
+      avatar.textContent = initials(p.name);
+
+      const info = document.createElement("div");
+      info.className = "profile-info";
+      info.innerHTML = `<div class="profile-name"></div><div class="profile-date"></div>`;
+      info.querySelector(".profile-name").textContent = p.name;
+      info.querySelector(".profile-date").textContent = formatMonthDay(p.month, p.day);
+
+      const playBtn = document.createElement("button");
+      playBtn.className = "btn btn-primary";
+      playBtn.style.width = "auto";
+      playBtn.style.padding = "10px 16px";
+      playBtn.style.fontSize = "14px";
+      playBtn.textContent = "Play";
+      playBtn.addEventListener("click", () => selectProfile(p));
+
+      const delBtn = document.createElement("button");
+      delBtn.className = "icon-btn";
+      delBtn.setAttribute("aria-label", "Remove " + p.name);
+      delBtn.innerHTML = "&#10005;";
+      delBtn.addEventListener("click", (e) => { e.stopPropagation(); removeProfile(p.id); });
+
+      card.appendChild(avatar);
+      card.appendChild(info);
+      card.appendChild(playBtn);
+      card.appendChild(delBtn);
+      list.appendChild(card);
+    });
+  }
+
+  async function removeProfile(id){
+    profiles = profiles.filter(p => p.id !== id);
+    await saveProfiles();
+    renderProfiles();
+  }
+
+  function selectProfile(p){
+    currentProfile = p;
+    document.getElementById("introText").textContent = "Your birthday is the day when you were born.";
+    document.getElementById("introSub").textContent = "Let's practice remembering it, " + p.name + "!";
+    showScreen("screen-intro");
+  }
+
+  document.getElementById("addProfileBtn").addEventListener("click", async () => {
+    const nameEl = document.getElementById("nameInput");
+    const dateEl = document.getElementById("dateInput");
+    const err = document.getElementById("formError");
+    const name = nameEl.value.trim();
+    const dateVal = dateEl.value;
+
+    if(!name || !dateVal){
+      err.style.display = "block";
+      return;
+    }
+    err.style.display = "none";
+
+    const parts = dateVal.split("-").map(Number);
+    const profile = {
+      id: "p_" + Date.now() + "_" + Math.floor(Math.random()*1000),
+      name: name,
+      year: parts[0],
+      month: parts[1],
+      day: parts[2]
+    };
+    profiles.push(profile);
+    await saveProfiles();
+    nameEl.value = "";
+    dateEl.value = "";
+    renderProfiles();
+  });
+
+  document.getElementById("backFromIntro").addEventListener("click", () => {
+    showScreen("screen-profiles");
+  });
+
+  // ---------- quiz screen ----------
+  function daysInMonth(month, year){
+    return new Date(year, month, 0).getDate();
+  }
+
+  function randomDate(refYear){
+    const month = 1 + Math.floor(Math.random()*12);
+    const day = 1 + Math.floor(Math.random()*daysInMonth(month, refYear));
+    return { month, day };
+  }
+
+  function sameDate(a,b){ return a.month === b.month && a.day === b.day; }
+
+  function buildOptions(correct, refYear){
+    const options = [correct];
+    while(options.length < 4){
+      const candidate = randomDate(refYear);
+      if(!options.some(o => sameDate(o, candidate))){
+        options.push(candidate);
+      }
+    }
+    // shuffle
+    for(let i = options.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i+1));
+      [options[i], options[j]] = [options[j], options[i]];
+    }
+    return options;
+  }
+
+  function buildCandles(){
+    const row = document.getElementById("candleRow");
+    row.innerHTML = "";
+    for(let i = 0; i < TOTAL_TRIALS; i++){
+      const wrap = document.createElement("div");
+      wrap.className = "candle";
+      wrap.id = "candle-" + i;
+      wrap.innerHTML = `
+        <svg viewBox="0 0 26 44" xmlns="http://www.w3.org/2000/svg">
+          <ellipse class="flame" cx="13" cy="8" rx="6" ry="9" fill="#ffc93c"/>
+          <ellipse class="flame" cx="13" cy="9" rx="3" ry="5" fill="#ff8f3c"/>
+          <rect x="9" y="16" width="8" height="24" rx="2" fill="#ff8fb1"/>
+          <rect x="9" y="16" width="8" height="6" rx="2" fill="#fff" opacity="0.5"/>
+        </svg>`;
+      row.appendChild(wrap);
+    }
+  }
+
+  function lightCandle(i){
+    const el = document.getElementById("candle-" + i);
+    if(el) el.classList.add("lit");
+  }
+
+  function startQuiz(){
+    quiz = { trial: 0, correct: 0 };
+    buildCandles();
+    document.getElementById("quizName").textContent = currentProfile.name + "'s";
+    showScreen("screen-quiz");
+    renderQuestion();
+  }
+
+  function renderQuestion(){
+    document.getElementById("quizMeta").textContent = "Question " + (quiz.trial + 1) + " of " + TOTAL_TRIALS;
+    document.getElementById("quizFeedback").textContent = "";
+
+    const correct = { month: currentProfile.month, day: currentProfile.day };
+    const refYear = currentProfile.year || new Date().getFullYear();
+    const options = buildOptions(correct, refYear);
+
+    const grid = document.getElementById("optionsGrid");
+    grid.innerHTML = "";
+    options.forEach(opt => {
+      const btn = document.createElement("button");
+      btn.className = "option";
+      btn.textContent = formatMonthDay(opt.month, opt.day);
+      btn.addEventListener("click", () => handleAnswer(opt, correct, btn));
+      grid.appendChild(btn);
+    });
+  }
+
+  function handleAnswer(chosen, correct, btnEl){
+    const isCorrect = sameDate(chosen, correct);
+    const allBtns = document.querySelectorAll("#optionsGrid .option");
+
+    if(isCorrect){
+      allBtns.forEach(b => b.disabled = true);
+      btnEl.classList.add("correct");
+      document.getElementById("quizFeedback").style.color = "var(--grass)";
+      document.getElementById("quizFeedback").textContent = "Yes! That's right. 🎉";
+      lightCandle(quiz.trial);
+      quiz.correct++;
+      setTimeout(() => {
+        quiz.trial++;
+        if(quiz.trial >= TOTAL_TRIALS){
+          startCalendar();
+        }else{
+          allBtns.forEach(b => b.disabled = false);
+          renderQuestion();
+        }
+      }, 700);
+    }else{
+      btnEl.classList.add("wrong");
+      document.getElementById("quizFeedback").style.color = "var(--coral)";
+      document.getElementById("quizFeedback").textContent = "Not quite — try again!";
+      setTimeout(() => btnEl.classList.remove("wrong"), 420);
+    }
+  }
+
+  // ---------- calendar screen ----------
+  function startCalendar(){
+    const refYear = currentProfile.year || new Date().getFullYear();
+    const month = currentProfile.month;
+    const nDays = daysInMonth(month, refYear);
+    const firstDow = new Date(refYear, month - 1, 1).getDay();
+
+    document.getElementById("cal-title").textContent = MONTH_NAMES[month-1] + " " + refYear;
+
+    const grid = document.getElementById("calGrid");
+    grid.innerHTML = "";
+    DOW.forEach(d => {
+      const el = document.createElement("div");
+      el.className = "cal-dow";
+      el.textContent = d;
+      grid.appendChild(el);
+    });
+    for(let i = 0; i < firstDow; i++){
+      const el = document.createElement("div");
+      el.className = "cal-day empty";
+      grid.appendChild(el);
+    }
+    for(let d = 1; d <= nDays; d++){
+      const el = document.createElement("div");
+      el.className = "cal-day";
+      el.textContent = d;
+      el.tabIndex = 0;
+      el.setAttribute("role","button");
+      el.addEventListener("click", () => handleCalendarPick(d, el));
+      el.addEventListener("keydown", (e) => { if(e.key === "Enter" || e.key === " "){ e.preventDefault(); handleCalendarPick(d, el); } });
+      grid.appendChild(el);
+    }
+    document.getElementById("calFeedback").textContent = "";
+    showScreen("screen-calendar");
+  }
+
+  function handleCalendarPick(day, el){
+    if(day === currentProfile.day){
+      el.classList.add("correct");
+      document.getElementById("calFeedback").style.color = "var(--grass)";
+      document.getElementById("calFeedback").textContent = "Perfect! You found it.";
+      setTimeout(showSuccess, 650);
+    }else{
+      el.classList.add("wrong");
+      document.getElementById("calFeedback").style.color = "var(--coral)";
+      document.getElementById("calFeedback").textContent = "Not that day — look again!";
+      setTimeout(() => el.classList.remove("wrong"), 420);
+    }
+  }
+
+  // ---------- success screen ----------
+  function showSuccess(){
+    document.getElementById("success-title").textContent = "You know your birthday, " + currentProfile.name + "!";
+    document.getElementById("successSub").textContent = formatMonthDay(currentProfile.month, currentProfile.day) + " — great memory, keep it up!";
+    showScreen("screen-success");
+    launchConfetti();
+  }
+
+  function launchConfetti(){
+    if(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const colors = ["#ff6b6b","#ffc93c","#3fb87f","#2f9fdc","#9b6bff"];
+    for(let i = 0; i < 40; i++){
+      const piece = document.createElement("div");
+      piece.className = "confetti-piece";
+      piece.style.left = Math.random()*100 + "vw";
+      piece.style.background = colors[Math.floor(Math.random()*colors.length)];
+      const duration = 2.2 + Math.random()*1.6;
+      piece.style.animationDuration = duration + "s";
+      piece.style.animationDelay = (Math.random()*0.4) + "s";
+      document.body.appendChild(piece);
+      setTimeout(() => piece.remove(), (duration+0.5)*1000);
+    }
+  }
+
+  // ---------- wire up buttons ----------
+  document.getElementById("startQuizBtn").addEventListener("click", startQuiz);
+  document.getElementById("playAgainBtn").addEventListener("click", startQuiz);
+  document.getElementById("switchProfileBtn").addEventListener("click", () => showScreen("screen-profiles"));
+
+  // ---------- init ----------
+  (async function init(){
+    await loadProfiles();
+    renderProfiles();
+  })();
+
+})();
+</script>
+</body>
+</html>
